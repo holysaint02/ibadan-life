@@ -142,3 +142,115 @@ app.post('/api/action/work', authMiddleware, (req, res) => {
   db.saveUser(user);
 
   io.to(`loc:${user.locationId}`).emit('player_action', {
+    username: user.username,
+    text: `${user.username} just finished a shift as a ${job.label}.`,
+  });
+
+  res.json({ user: publicUser(user), earned });
+});
+
+app.post('/api/action/rest', authMiddleware, (req, res) => {
+  const user = req.user;
+  const recovered = 30;
+  user.energy = Math.min(100, user.energy + recovered);
+  user.log.unshift(`Rested and recovered ${recovered} energy.`);
+  user.log = user.log.slice(0, 20);
+  db.saveUser(user);
+  res.json({ user: publicUser(user) });
+});
+
+app.post('/api/action/socialize', authMiddleware, (req, res) => {
+  const user = req.user;
+  const location = LOCATIONS.find(l => l.id === user.locationId);
+  if (!location || location.type !== 'social') {
+    return res.status(400).json({ error: 'This is not a social spot. Try Agodi Gardens, Ring Road, or Mokola.' });
+  }
+  const repGain = Math.floor(2 + Math.random() * 5);
+  const happinessGain = Math.floor(5 + Math.random() * 10);
+  user.reputation += repGain;
+  user.happiness = Math.min(100, user.happiness + happinessGain);
+  user.log.unshift(`Socialized at ${location.name}. +${repGain} reputation, +${happinessGain} happiness.`);
+  user.log = user.log.slice(0, 20);
+  db.saveUser(user);
+
+  io.to(`loc:${user.locationId}`).emit('player_action', {
+    username: user.username,
+    text: `${user.username} is socializing at ${location.name}.`,
+  });
+
+  res.json({ user: publicUser(user) });
+});
+
+app.post('/api/action/pay-debt', authMiddleware, (req, res) => {
+  const { amount } = req.body;
+  const user = req.user;
+  const pay = Math.min(user.cash, user.debt, Number(amount) || 0);
+  if (pay <= 0) return res.status(400).json({ error: 'Nothing to pay' });
+  user.cash -= pay;
+  user.debt -= pay;
+  user.log.unshift(`Paid off ₦${pay} of debt.`);
+  user.log = user.log.slice(0, 20);
+  db.saveUser(user);
+  res.json({ user: publicUser(user) });
+});
+
+// ---------- socket.io: presence + chat per location ----------
+
+function socketAuth(socket, next) {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('No token'));
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    const user = db.getUser(payload.username);
+    if (!user) return next(new Error('User not found'));
+    socket.username = user.username;
+    next();
+  } catch (e) {
+    next(new Error('Invalid token'));
+  }
+}
+
+io.use(socketAuth);
+
+function presenceInRoom(roomId) {
+  const room = io.sockets.adapter.rooms.get(roomId);
+  if (!room) return [];
+  return [...room]
+    .map(id => io.sockets.sockets.get(id)?.username)
+    .filter(Boolean);
+}
+
+io.on('connection', (socket) => {
+  const user = db.getUser(socket.username);
+  let currentRoom = `loc:${user.locationId}`;
+  socket.join(currentRoom);
+  io.to(currentRoom).emit('presence', { locationId: user.locationId, players: presenceInRoom(currentRoom) });
+
+  socket.on('change_location', (locationId) => {
+    const location = LOCATIONS.find(l => l.id === locationId);
+    if (!location) return;
+    socket.leave(currentRoom);
+    io.to(currentRoom).emit('presence', { locationId: currentRoom.replace('loc:', ''), players: presenceInRoom(currentRoom) });
+
+    currentRoom = `loc:${locationId}`;
+    socket.join(currentRoom);
+    io.to(currentRoom).emit('presence', { locationId, players: presenceInRoom(currentRoom) });
+  });
+
+  socket.on('chat', (text) => {
+    if (!text || typeof text !== 'string' || !text.trim()) return;
+    io.to(currentRoom).emit('chat', {
+      username: socket.username,
+      text: text.slice(0, 300),
+      ts: Date.now(),
+    });
+  });
+
+  socket.on('disconnect', () => {
+    io.to(currentRoom).emit('presence', { locationId: currentRoom.replace('loc:', ''), players: presenceInRoom(currentRoom) });
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`Ibadan Life running on http://localhost:${PORT}`);
+});

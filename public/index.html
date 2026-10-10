@@ -19,14 +19,14 @@
     </div>
 
     <form id="login-form" class="auth-form">
-      <input type="text" id="login-username" placeholder="Username" required />
-      <input type="password" id="login-password" placeholder="Password" required />
+      <input type="text" id="login-username" placeholder="Username" autocomplete="username" required />
+      <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required />
       <button type="submit">Log In</button>
     </form>
 
     <form id="register-form" class="auth-form hidden">
-      <input type="text" id="reg-username" placeholder="Username" required />
-      <input type="password" id="reg-password" placeholder="Password" required />
+      <input type="text" id="reg-username" placeholder="Username" autocomplete="username" required />
+      <input type="password" id="reg-password" placeholder="Password" autocomplete="new-password" required />
       <div class="profile-choice">
         <label class="profile-card">
           <input type="radio" name="profile" value="established" checked />

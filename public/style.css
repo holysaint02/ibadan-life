@@ -1,0 +1,151 @@
+:root {
+  --green: #0a7d3c;
+  --gold: #d4a017;
+  --bg: #f4f1e9;
+  --card: #ffffff;
+  --text: #22201b;
+  --muted: #6b6558;
+  --border: #e2ddd0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.hidden { display: none !important; }
+
+/* ---------- Auth screen ---------- */
+
+#auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--green), #064a24);
+}
+
+.auth-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+}
+
+.auth-card h1 { margin: 0 0 4px; font-size: 28px; }
+.tagline { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.tab {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.tab.active { background: var(--green); color: white; border-color: var(--green); }
+
+.auth-form { display: flex; flex-direction: column; gap: 10px; }
+.auth-form input[type="text"], .auth-form input[type="password"], .auth-form input[type="number"] {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+}
+.auth-form button {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--gold);
+  color: #2b2200;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.profile-choice { display: flex; gap: 10px; margin: 6px 0; }
+.profile-card {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.profile-card span { color: var(--muted); }
+.profile-card input { margin-bottom: 4px; }
+
+.error { color: #b3261e; font-size: 13px; min-height: 18px; margin-top: 10px; }
+
+/* ---------- Game screen ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--green);
+  color: white;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.player-id { font-size: 16px; }
+.stats { display: flex; gap: 14px; font-size: 14px; flex-wrap: wrap; }
+#logout-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 320px;
+  gap: 16px;
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+.locations-panel, .current-panel, .side-panel > div {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.locations-panel h2, .current-panel h2 { margin-top: 0; }
+
+#locations-list { display: flex; flex-direction: column; gap: 6px; }
+.location-btn {
+  text-align: left;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 14px;
+}
+.location-btn.active { background: var(--green); color: white; border-color: var(--green); }
+
+.action-group { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.job-btn {
+  display

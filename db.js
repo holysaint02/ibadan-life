@@ -1,47 +1,44 @@
-// db.js — minimal file-based persistence.
-// Swap this for Postgres/Mongo later if you outgrow it; the interface
-// (getUser, saveUser, getAllUsers) is small on purpose.
+// db.js — Postgres-backed persistence.
+// Same small interface as before (getUser, saveUser, getAllUsers),
+// now backed by a real database so data survives restarts/redeploys.
 
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg');
 
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'players.json');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+});
 
-function load() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({}, null, 2));
-  }
-  const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-  try {
-    return JSON.parse(raw || '{}');
-  } catch (e) {
-    console.error('Corrupt data file, starting fresh:', e.message);
-    return {};
-  }
+const ready = pool.query(`
+  CREATE TABLE IF NOT EXISTS players (
+    username TEXT PRIMARY KEY,
+    data JSONB NOT NULL
+  )
+`);
+
+async function getUser(username) {
+  await ready;
+  const res = await pool.query(
+    'SELECT data FROM players WHERE username = $1',
+    [username.toLowerCase()]
+  );
+  if (res.rows.length === 0) return null;
+  return res.rows[0].data;
 }
 
-function persist(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+async function saveUser(user) {
+  await ready;
+  await pool.query(
+    `INSERT INTO players (username, data) VALUES ($1, $2)
+     ON CONFLICT (username) DO UPDATE SET data = $2`,
+    [user.username.toLowerCase(), user]
+  );
 }
 
-function getUser(username) {
-  const data = load();
-  return data[username.toLowerCase()] || null;
-}
-
-function saveUser(user) {
-  const data = load();
-  data[user.username.toLowerCase()] = user;
-  persist(data);
-}
-
-function getAllUsers() {
-  const data = load();
-  return Object.values(data);
+async function getAllUsers() {
+  await ready;
+  const res = await pool.query('SELECT data FROM players');
+  return res.rows.map((row) => row.data);
 }
 
 module.exports = { getUser, saveUser, getAllUsers };
